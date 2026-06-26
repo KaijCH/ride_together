@@ -7,11 +7,24 @@ class VehicleCateories(Enum):
     SUV = "SUV"
     Coupe = "Coupe"
 
+    @classmethod
+    def isValid(cls, vtype: str) -> bool:
+        return vtype in cls._value2member_map_
+        
+
 class Vehicle:
 
-    def __init__(self, feature: str, vtype: str):
+    def __init__(self, feature: str, category: VehicleCateories):
         self.feature = feature
-        self.category = VehicleCateories[vtype]
+        self.category = category
+
+    @classmethod
+    def addingVehicle(cls, vtype: str, feature: str) -> tuple["Vehicle" | None, Exception]:
+        if not VehicleCateories.isValid(vtype=vtype):
+            return None, FailureValueUnforeseenInField(cls.VehicleType, "user registration")
+        vehicle = Vehicle(feature=feature, category=VehicleCateories[vtype])
+        return vehicle, None
+        
 
 
 class Registration:
@@ -43,13 +56,18 @@ class Registration:
         nickname = info[cls.Nickname]
         timestamp = info[cls.Timestamp]
         place = info[cls.Place]
-        vtype = info[cls.VehicleType]
-        owns = info[cls.OwnsVehicle] == cls.Yes and vtype in VehicleCateories
-        vehicle = Vehicle(feature=info[cls.VehicleFeature], vtype=vtype) if owns else None
-        
-        friction = True if vtype not in VehicleCateories else False
-        registration =  Registration(username=username, nickname=nickname, timestamp=timestamp, place=place, owns=owns, vehicle=vehicle, unresolution=friction)
-        if friction:
-            return registration, FailureValueUnforeseenInField(cls.VehicleType, "user registration")
-        
+        vehicle, exception = Vehicle.addingVehicle(vtype=info[cls.VehicleType], owns=info[cls.OwnsVehicle])
+        owns = False if not vehicle else True
+        registration = Registration(
+            username=username, 
+            nickname=nickname, 
+            timestamp=timestamp, 
+            place=place, 
+            owns=owns, 
+            vehicle=vehicle, 
+            unresolution=not exception
+        )
+
+        if exception:
+            return registration, exception
         return registration, None
