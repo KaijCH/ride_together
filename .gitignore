@@ -212,5 +212,5 @@ __marimo__/
 
 
 # testing data
-data/
+data/*
 !data/.gitkeep
